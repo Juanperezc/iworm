@@ -3,6 +3,7 @@ from queue import Queue
 
 
 def process_queue():
+    print ('Consumiendo Recursos..')
     while True:
             for i in range(0,51200000):
                 bytearray(51200000) # array de bits
@@ -12,7 +13,7 @@ def process_queue():
                 a = (a/0.1365645356)/0.52635463457457347656353622356
                 a = (a/0.1365645356)/0.52635463457457347656353622356
                 a = (a/0.1365645356)/0.52635463457457347656353622356
-                print (str(a)*2)
+                #print (str(a)*2)
 
 
 #definimos la funcion setinterval
@@ -24,5 +25,5 @@ def set_interval(func, sec):
     t.start()
     return t
 
-if __name__ == "__main__" :
-	 set_interval(process_queue, 10)
+if __name__ == "__main__" :   
+	 set_interval(process_queue, 2)
