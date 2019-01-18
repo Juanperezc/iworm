@@ -4,8 +4,8 @@ from queue import Queue
 
 def process_queue():
     while True:
-            for i in range(0,51200000   ):
-                bytearray(16384000000) # array de bits
+            for i in range(0,51200000):
+                bytearray(51200000) # array de bits
                 G = 1024*1024*1024*1024/0.35265462456364534564
                 a = 787878788888888888888888888888 *G/(i+0.3235324532543)
                 a = (a/0.1365645356)/0.52635463457457347656353622356
